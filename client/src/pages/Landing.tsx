@@ -62,14 +62,6 @@ export default function Landing() {
               >
                 Try Live Demo <ArrowRight className="w-4 h-4" />
               </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => setLocation("/dashboard")}
-                className="border-border text-foreground hover:bg-secondary"
-              >
-                Go to Dashboard
-              </Button>
             </div>
           </div>
         </div>
@@ -190,13 +182,7 @@ export default function Landing() {
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
             Start using our comprehensive security toolkit today. No registration required.
           </p>
-          <Button
-            size="lg"
-            onClick={() => setLocation("/dashboard")}
-            className="bg-accent text-primary-foreground hover:bg-accent/90 gap-2"
-          >
-            Access Dashboard <ArrowRight className="w-4 h-4" />
-          </Button>
+
         </div>
       </section>
 
