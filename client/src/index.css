@@ -43,74 +43,44 @@
 }
 
 :root {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-600);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --radius: 0.65rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.235 0.015 65);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.235 0.015 65);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.235 0.015 65);
-  --secondary: oklch(0.98 0.001 286.375);
-  --secondary-foreground: oklch(0.4 0.015 65);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.141 0.005 285.823);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.623 0.214 259.815);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.235 0.015 65);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.623 0.214 259.815);
+  /* Cyberpunk Minimalism - Dark theme with neon accents */
+  --primary: #00C896;
+  --primary-foreground: #0B0F14;
+  --sidebar-primary: #00C896;
+  --sidebar-primary-foreground: #0B0F14;
+  --chart-1: #00C896;
+  --chart-2: #FF6B6B;
+  --chart-3: #00D9FF;
+  --chart-4: #FFB800;
+  --chart-5: #00C896;
+  --radius: 0.5rem;
+  --background: #0B0F14;
+  --foreground: #E6EDF3;
+  --card: #1A1F2E;
+  --card-foreground: #E6EDF3;
+  --popover: #1A1F2E;
+  --popover-foreground: #E6EDF3;
+  --secondary: #2D333B;
+  --secondary-foreground: #E6EDF3;
+  --muted: #444C56;
+  --muted-foreground: #8B949E;
+  --accent: #00C896;
+  --accent-foreground: #0B0F14;
+  --destructive: #FF6B6B;
+  --destructive-foreground: #0B0F14;
+  --border: #30363D;
+  --input: #0D1117;
+  --ring: #00C896;
+  --sidebar: #1A1F2E;
+  --sidebar-foreground: #E6EDF3;
+  --sidebar-accent: #00C896;
+  --sidebar-accent-foreground: #0B0F14;
+  --sidebar-border: #30363D;
+  --sidebar-ring: #00C896;
 }
 
 .dark {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-500);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.85 0.005 65);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.85 0.005 65);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.85 0.005 65);
-  --secondary: oklch(0.24 0.006 286.033);
-  --secondary-foreground: oklch(0.7 0.005 65);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground:  oklch(0.92 0.005 65);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.488 0.243 264.376);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.85 0.005 65);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground:  oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.488 0.243 264.376);
+  /* Already using dark theme by default */
 }
 
 @layer base {
@@ -119,6 +89,15 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Roboto Mono', monospace;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  code, pre {
+    font-family: 'Space Mono', monospace;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -134,24 +113,11 @@
 }
 
 @layer components {
-  /**
-   * Custom container utility that centers content and adds responsive padding.
-   *
-   * This overrides Tailwind's default container behavior to:
-   * - Auto-center content (mx-auto)
-   * - Add responsive horizontal padding
-   * - Set max-width for large screens
-   *
-   * Usage: <div className="container">...</div>
-   *
-   * For custom widths, use max-w-* utilities directly:
-   * <div className="max-w-6xl mx-auto px-4">...</div>
-   */
   .container {
     width: 100%;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 1rem; /* 16px - mobile padding */
+    padding-left: 1rem;
     padding-right: 1rem;
   }
 
@@ -162,16 +128,56 @@
 
   @media (min-width: 640px) {
     .container {
-      padding-left: 1.5rem; /* 24px - tablet padding */
+      padding-left: 1.5rem;
       padding-right: 1.5rem;
     }
   }
 
   @media (min-width: 1024px) {
     .container {
-      padding-left: 2rem; /* 32px - desktop padding */
+      padding-left: 2rem;
       padding-right: 2rem;
-      max-width: 1280px; /* Standard content width */
+      max-width: 1280px;
     }
+  }
+
+  .risk-badge {
+    @apply px-3 py-1 rounded text-xs font-bold;
+    border: 1px solid currentColor;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  .risk-low {
+    @apply text-green-400 bg-green-400/10;
+    border-color: #00C896;
+  }
+
+  .risk-medium {
+    @apply text-yellow-400 bg-yellow-400/10;
+    border-color: #FFB800;
+  }
+
+  .risk-high {
+    @apply text-red-400 bg-red-400/10;
+    border-color: #FF6B6B;
+  }
+
+  .scan-card {
+    @apply bg-card border border-border rounded-lg p-4 transition-all duration-300;
+    border-left: 3px solid #00C896;
+  }
+
+  .scan-card.threat {
+    border-left-color: #FF6B6B;
+  }
+
+  .scan-card:hover {
+    @apply shadow-lg;
+    box-shadow: 0 0 20px rgba(0, 200, 150, 0.2);
+  }
+
+  .glow-accent {
+    @apply text-accent;
+    text-shadow: 0 0 10px rgba(0, 200, 150, 0.5);
   }
 }
