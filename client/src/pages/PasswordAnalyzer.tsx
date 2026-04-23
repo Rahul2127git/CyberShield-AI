@@ -1,20 +1,15 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Eye, EyeOff, AlertTriangle, CheckCircle } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 
 interface PasswordAnalysis {
-  strength: "weak" | "fair" | "good" | "strong";
-  score: number;
+  strength: number;
+  level: string;
   crackTime: string;
   suggestions: string[];
-  hasLowercase: boolean;
-  hasUppercase: boolean;
-  hasNumbers: boolean;
-  hasSpecial: boolean;
-  length: number;
 }
 
 export default function PasswordAnalyzer() {
@@ -22,76 +17,54 @@ export default function PasswordAnalyzer() {
   const [showPassword, setShowPassword] = useState(false);
   const [analysis, setAnalysis] = useState<PasswordAnalysis | null>(null);
 
-  const analyzePassword = (pwd: string) => {
-    if (!pwd) {
+  const analyzePasswordMutation = trpc.security.analyzePassword.useQuery(
+    { password },
+    { enabled: false }
+  );
+
+  useEffect(() => {
+    if (password.trim()) {
+      const timer = setTimeout(() => {
+        analyzePasswordMutation.refetch().then(result => {
+          if (result.data) {
+            setAnalysis(result.data);
+          }
+        });
+      }, 300); // Debounce
+      return () => clearTimeout(timer);
+    } else {
       setAnalysis(null);
-      return;
     }
+  }, [password]);
 
-    const hasLowercase = /[a-z]/.test(pwd);
-    const hasUppercase = /[A-Z]/.test(pwd);
-    const hasNumbers = /[0-9]/.test(pwd);
-    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd);
-    const length = pwd.length;
-
-    let score = 0;
-    const suggestions: string[] = [];
-
-    // Length scoring
-    if (length >= 8) score += 20;
-    if (length >= 12) score += 20;
-    if (length >= 16) score += 20;
-    else suggestions.push("Use at least 12 characters");
-
-    // Complexity scoring
-    if (hasLowercase) score += 15;
-    else suggestions.push("Add lowercase letters");
-
-    if (hasUppercase) score += 15;
-    else suggestions.push("Add uppercase letters");
-
-    if (hasNumbers) score += 15;
-    else suggestions.push("Add numbers");
-
-    if (hasSpecial) score += 15;
-    else suggestions.push("Add special characters (!@#$%^&*)");
-
-    // Determine strength
-    let strength: "weak" | "fair" | "good" | "strong" = "weak";
-    if (score >= 80) strength = "strong";
-    else if (score >= 60) strength = "good";
-    else if (score >= 40) strength = "fair";
-
-    // Estimate crack time (simplified)
-    const charsetSize = (hasLowercase ? 26 : 0) + (hasUppercase ? 26 : 0) + (hasNumbers ? 10 : 0) + (hasSpecial ? 32 : 0);
-    const possibilities = Math.pow(charsetSize, length);
-    const guessesPerSecond = 1e9; // 1 billion guesses per second
-    const seconds = possibilities / (2 * guessesPerSecond);
-
-    let crackTime = "Less than a second";
-    if (seconds > 60) crackTime = `${Math.round(seconds / 60)} minutes`;
-    if (seconds > 3600) crackTime = `${Math.round(seconds / 3600)} hours`;
-    if (seconds > 86400) crackTime = `${Math.round(seconds / 86400)} days`;
-    if (seconds > 31536000) crackTime = `${Math.round(seconds / 31536000)} years`;
-    if (seconds > 31536000 * 1000) crackTime = "Centuries";
-
-    setAnalysis({
-      strength,
-      score: Math.min(100, score),
-      crackTime,
-      suggestions,
-      hasLowercase,
-      hasUppercase,
-      hasNumbers,
-      hasSpecial,
-      length,
-    });
+  const getStrengthColor = (level: string) => {
+    switch (level) {
+      case "weak":
+        return "text-red-400";
+      case "medium":
+        return "text-yellow-400";
+      case "strong":
+        return "text-green-400";
+      default:
+        return "text-gray-400";
+    }
   };
 
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const pwd = e.target.value;
-    setPassword(pwd);
-    analyzePassword(pwd);
+  const getStrengthBarColor = (level: string) => {
+    switch (level) {
+      case "weak":
+        return "bg-red-500";
+      case "medium":
+        return "bg-yellow-500";
+      case "strong":
+        return "bg-green-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
+  const getScoreFromLevel = (level: string, strength: number) => {
+    return Math.round(strength * 100);
   };
 
   return (
@@ -100,7 +73,7 @@ export default function PasswordAnalyzer() {
         {/* Header */}
         <div>
           <h1 className="text-4xl font-bold font-poppins mb-2">Password Analyzer</h1>
-          <p className="text-muted-foreground">Evaluate password strength and get improvement suggestions</p>
+          <p className="text-muted-foreground">Evaluate password strength using machine learning and get improvement suggestions</p>
         </div>
 
         {/* Input Section */}
@@ -111,7 +84,7 @@ export default function PasswordAnalyzer() {
               type={showPassword ? "text" : "password"}
               placeholder="Enter password to analyze..."
               value={password}
-              onChange={handlePasswordChange}
+              onChange={(e) => setPassword(e.target.value)}
               className="pr-12 bg-input border-border text-foreground placeholder:text-muted-foreground"
             />
             <button
@@ -121,7 +94,7 @@ export default function PasswordAnalyzer() {
               {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">Your password is analyzed locally and never sent to any server.</p>
+          <p className="text-xs text-muted-foreground mt-2">Your password is analyzed locally using ML models and never stored.</p>
         </Card>
 
         {/* Analysis Results */}
@@ -133,30 +106,17 @@ export default function PasswordAnalyzer() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Strength</span>
-                  <span className={`font-bold font-poppins text-lg ${
-                    analysis.strength === "strong" ? "text-green-400" :
-                    analysis.strength === "good" ? "text-blue-400" :
-                    analysis.strength === "fair" ? "text-yellow-400" :
-                    "text-red-400"
-                  }`}>
-                    {analysis.strength.toUpperCase()}
+                  <span className={`font-bold font-poppins text-lg ${getStrengthColor(analysis.level)}`}>
+                    {analysis.level.toUpperCase()}
                   </span>
                 </div>
                 <div className="w-full bg-secondary/50 rounded-full h-4 overflow-hidden">
                   <div
-                    className={`h-full transition-all duration-500 ${
-                      analysis.strength === "strong"
-                        ? "bg-green-500"
-                        : analysis.strength === "good"
-                          ? "bg-blue-500"
-                          : analysis.strength === "fair"
-                            ? "bg-yellow-500"
-                            : "bg-red-500"
-                    }`}
-                    style={{ width: `${analysis.score}%` }}
+                    className={`h-full transition-all duration-500 ${getStrengthBarColor(analysis.level)}`}
+                    style={{ width: `${analysis.strength * 100}%` }}
                   />
                 </div>
-                <p className="text-sm text-muted-foreground">Score: {analysis.score}/100</p>
+                <p className="text-sm text-muted-foreground">Score: {getScoreFromLevel(analysis.level, analysis.strength)}/100</p>
               </div>
             </Card>
 
@@ -167,53 +127,6 @@ export default function PasswordAnalyzer() {
               <p className="text-sm text-muted-foreground mt-2">
                 Assuming 1 billion guesses per second with brute force attack
               </p>
-            </Card>
-
-            {/* Character Requirements */}
-            <Card className="bg-card border-border p-6">
-              <h3 className="text-lg font-bold font-poppins mb-4">Character Requirements</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
-                  <span className="font-mono text-sm">Length: {analysis.length} characters</span>
-                  {analysis.length >= 12 ? (
-                    <CheckCircle className="w-5 h-5 text-green-400" />
-                  ) : (
-                    <AlertTriangle className="w-5 h-5 text-yellow-400" />
-                  )}
-                </div>
-                <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
-                  <span className="font-mono text-sm">Lowercase (a-z)</span>
-                  {analysis.hasLowercase ? (
-                    <CheckCircle className="w-5 h-5 text-green-400" />
-                  ) : (
-                    <AlertTriangle className="w-5 h-5 text-red-400" />
-                  )}
-                </div>
-                <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
-                  <span className="font-mono text-sm">Uppercase (A-Z)</span>
-                  {analysis.hasUppercase ? (
-                    <CheckCircle className="w-5 h-5 text-green-400" />
-                  ) : (
-                    <AlertTriangle className="w-5 h-5 text-red-400" />
-                  )}
-                </div>
-                <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
-                  <span className="font-mono text-sm">Numbers (0-9)</span>
-                  {analysis.hasNumbers ? (
-                    <CheckCircle className="w-5 h-5 text-green-400" />
-                  ) : (
-                    <AlertTriangle className="w-5 h-5 text-red-400" />
-                  )}
-                </div>
-                <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
-                  <span className="font-mono text-sm">Special (!@#$%^&*)</span>
-                  {analysis.hasSpecial ? (
-                    <CheckCircle className="w-5 h-5 text-green-400" />
-                  ) : (
-                    <AlertTriangle className="w-5 h-5 text-red-400" />
-                  )}
-                </div>
-              </div>
             </Card>
 
             {/* Suggestions */}
@@ -231,6 +144,18 @@ export default function PasswordAnalyzer() {
               </Card>
             )}
 
+            {analysis.suggestions.length === 0 && (
+              <Card className="bg-green-500/10 border-green-500/20 p-6">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="text-lg font-bold font-poppins text-green-400 mb-1">Excellent Password!</h3>
+                    <p className="text-sm text-muted-foreground">Your password meets all security best practices and has strong entropy.</p>
+                  </div>
+                </div>
+              </Card>
+            )}
+
             {/* Best Practices */}
             <Card className="bg-card border-border p-6">
               <h3 className="text-lg font-bold font-poppins mb-4">Password Best Practices</h3>
@@ -241,6 +166,8 @@ export default function PasswordAnalyzer() {
                 <li>• Never share your password with anyone</li>
                 <li>• Change passwords if you suspect compromise</li>
                 <li>• Avoid using personal information in passwords</li>
+                <li>• Use at least 12 characters for strong passwords</li>
+                <li>• Mix uppercase, lowercase, numbers, and special characters</li>
               </ul>
             </Card>
           </div>

@@ -1,0 +1,20 @@
+{
+  "feature_names": [
+    "domain_length",
+    "has_hyphen",
+    "has_underscore",
+    "has_dot",
+    "has_numeric",
+    "numeric_ratio",
+    "has_ip",
+    "has_www",
+    "subdomain_count",
+    "tld_length",
+    "tld_numeric",
+    "char_diversity",
+    "has_suspicious_keyword"
+  ],
+  "accuracy": 1.0,
+  "model_type": "RandomForestClassifier",
+  "version": "1.0"
+}

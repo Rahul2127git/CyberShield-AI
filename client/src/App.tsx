@@ -10,8 +10,8 @@ import VulnerabilityScanner from "./pages/VulnerabilityScanner";
 import PhishingDetection from "./pages/PhishingDetection";
 import PasswordAnalyzer from "./pages/PasswordAnalyzer";
 import Reports from "./pages/Reports";
-
 function Router() {
+  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path="/" component={Landing} />
