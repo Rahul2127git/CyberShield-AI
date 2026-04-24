@@ -1,0 +1,20 @@
+{
+  "phishing": {
+    "accuracy": 1.0,
+    "f1": 1.0,
+    "auc": 1.0,
+    "cv_mean": 1.0
+  },
+  "password": {
+    "accuracy": 1.0,
+    "f1": 1.0,
+    "auc": 1.0,
+    "cv_mean": 1.0
+  },
+  "vulnerability": {
+    "accuracy": 1.0,
+    "f1": 1.0,
+    "auc": 1.0,
+    "cv_mean": 1.0
+  }
+}

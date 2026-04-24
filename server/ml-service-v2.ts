@@ -1,7 +1,6 @@
-/**
- * ML-Powered Security Analysis Service
- * Uses trained models for professional-grade predictions
- */
+import * as fs from 'fs';
+import * as path from 'path';
+import { execSync } from 'child_process';
 
 interface PhishingResult {
   probability: number;
@@ -24,116 +23,208 @@ interface VulnerabilityResult {
   recommendations: string[];
 }
 
-/**
- * Predict phishing probability for a URL using ML-based feature analysis
- */
-export function predictPhishing(url: string): PhishingResult {
-  const features = extractPhishingFeatures(url);
-  
-  // ML-based scoring using trained feature weights
-  let probability = 0.15; // Base probability
-  
-  // Feature-based scoring (trained model weights)
-  probability += features.is_ip * 0.25;
-  probability += Math.min(features.digit_ratio * 0.3, 0.15);
-  probability += Math.min(features.suspicious_keyword_count * 0.08, 0.2);
-  probability += features.has_at * 0.2;
-  probability += Math.min(features.subdomain_count * 0.05, 0.1);
-  probability += (1 - Math.min(features.domain_length / 50, 1)) * 0.1;
-  probability += features.domain_entropy * 0.05;
-  probability += features.has_encoding * 0.1;
-  
-  // Normalize to 0-1 range
-  probability = Math.min(Math.max(probability, 0), 0.99);
-  
-  const risk = probability > 0.7 ? 'high' : probability > 0.4 ? 'medium' : 'low';
-  const confidence = Math.min(0.95, 0.7 + Math.abs(probability - 0.5));
-  
-  return {
-    probability,
-    risk,
-    confidence,
-    features
-  };
+// Helper function to call Python for ML predictions
+function callPythonML(scriptPath: string, inputData: string): string {
+  try {
+    const result = execSync(`python3 "${scriptPath}" '${inputData}'`, {
+      encoding: 'utf-8',
+      maxBuffer: 10 * 1024 * 1024,
+      timeout: 30000
+    });
+    return result.trim();
+  } catch (error) {
+    console.error('[ML] Python execution error:', error);
+    throw new Error('ML prediction failed');
+  }
 }
 
 /**
- * Predict password strength using ML-based entropy and pattern analysis
+ * Predict phishing probability for a URL using trained model
+ */
+export function predictPhishing(url: string): PhishingResult {
+  try {
+    const scriptPath = path.join(process.cwd(), 'ml-models', 'predict_phishing.py');
+    
+    // Extract URL features
+    const features = extractPhishingFeatures(url);
+    
+    // Call Python prediction script
+    const predictionScript = `
+import json
+import pickle
+import numpy as np
+from urllib.parse import urlparse
+import sys
+
+# Load model
+with open('ml-models/trained_models/phishing_model.pkl', 'rb') as f:
+    model_data = pickle.load(f)
+
+model = model_data['model']
+scaler = model_data['scaler']
+feature_names = model_data['feature_names']
+
+# Prepare features
+features = json.loads('${JSON.stringify(features)}')
+feature_vector = np.array([[features[name] for name in feature_names]])
+feature_scaled = scaler.transform(feature_vector)
+
+# Predict
+probability = model.predict_proba(feature_scaled)[0][1]
+prediction = model.predict(feature_scaled)[0]
+
+print(json.dumps({
+    'probability': float(probability),
+    'prediction': int(prediction)
+}))
+`;
+
+    const result = JSON.parse(execSync(`python3 -c "${predictionScript}"`, {
+      encoding: 'utf-8',
+      maxBuffer: 10 * 1024 * 1024
+    }));
+
+    const probability = result.probability;
+    let risk = 'low';
+    if (probability > 0.7) risk = 'high';
+    else if (probability > 0.4) risk = 'medium';
+
+    return {
+      probability,
+      risk,
+      confidence: Math.abs(probability - 0.5) * 2,
+      features
+    };
+  } catch (error) {
+    console.error('[ML] Phishing prediction error:', error);
+    // Fallback to heuristic
+    return fallbackPhishingPrediction(url);
+  }
+}
+
+/**
+ * Predict password strength using trained model
  */
 export function predictPasswordStrength(password: string): PasswordResult {
-  const features = extractPasswordFeatures(password);
-  
-  // ML-based strength scoring
-  let strength = 0.2; // Base strength
-  
-  // Entropy-based scoring (primary factor)
-  const maxEntropy = 200;
-  strength += Math.min(features.entropy / maxEntropy, 0.35);
-  
-  // Character diversity scoring
-  if (features.lowercase_count > 0) strength += 0.1;
-  if (features.uppercase_count > 0) strength += 0.1;
-  if (features.digit_count > 0) strength += 0.1;
-  if (features.special_count > 0) strength += 0.1;
-  
-  // Length bonus
-  if (features.length >= 16) strength += 0.1;
-  else if (features.length >= 12) strength += 0.05;
-  
-  // Pattern penalties
-  if (features.common_pattern) strength -= 0.15;
-  if (features.keyboard_pattern) strength -= 0.1;
-  if (features.has_repeated) strength -= 0.05;
-  
-  // Normalize
-  strength = Math.min(Math.max(strength, 0), 0.99);
-  
-  const level = strength > 0.7 ? 'strong' : strength > 0.4 ? 'medium' : 'weak';
-  const suggestions = generatePasswordSuggestions(password, features);
-  const crackTime = estimateCrackTime(features);
-  
-  return {
-    level,
-    strength,
-    crackTime,
-    suggestions
-  };
+  try {
+    const features = extractPasswordFeatures(password);
+
+    const predictionScript = `
+import json
+import pickle
+import numpy as np
+import sys
+
+# Load model
+with open('ml-models/trained_models/password_model.pkl', 'rb') as f:
+    model_data = pickle.load(f)
+
+model = model_data['model']
+scaler = model_data['scaler']
+feature_names = model_data['feature_names']
+
+# Prepare features
+features = json.loads('${JSON.stringify(features)}')
+feature_vector = np.array([[features[name] for name in feature_names]])
+feature_scaled = scaler.transform(feature_vector)
+
+# Predict
+strength_prob = model.predict_proba(feature_scaled)[0][1]
+prediction = model.predict(feature_scaled)[0]
+
+print(json.dumps({
+    'strength': float(strength_prob),
+    'prediction': int(prediction)
+}))
+`;
+
+    const result = JSON.parse(execSync(`python3 -c "${predictionScript}"`, {
+      encoding: 'utf-8',
+      maxBuffer: 10 * 1024 * 1024
+    }));
+
+    const strength = result.strength;
+    let level = 'weak';
+    if (strength > 0.7) level = 'strong';
+    else if (strength > 0.4) level = 'medium';
+
+    // Generate suggestions
+    const suggestions = generatePasswordSuggestions(password, features);
+
+    // Estimate crack time
+    const crackTime = estimateCrackTime(features);
+
+    return {
+      level,
+      strength,
+      crackTime,
+      suggestions
+    };
+  } catch (error) {
+    console.error('[ML] Password prediction error:', error);
+    return fallbackPasswordPrediction(password);
+  }
 }
 
 /**
  * Predict vulnerability risk for a URL
  */
 export function predictVulnerability(url: string): VulnerabilityResult {
-  const features = extractVulnerabilityFeatures(url);
-  
-  // ML-based risk scoring
-  let risk = 0.1; // Base risk
-  
-  // HTTPS check (critical)
-  if (!features.is_https) risk += 0.3;
-  
-  // Injection attack patterns
-  if (features.xss_risk) risk += 0.25;
-  if (features.sql_risk) risk += 0.25;
-  if (features.traversal_risk) risk += 0.2;
-  
-  // URL complexity indicators
-  risk += Math.min(features.query_param_count * 0.02, 0.1);
-  risk += Math.min(features.encoding_count * 0.03, 0.1);
-  
-  // Normalize
-  risk = Math.min(Math.max(risk, 0), 0.99);
-  
-  const level = risk > 0.7 ? 'high' : risk > 0.4 ? 'medium' : 'low';
-  const vulnerabilities = detectVulnerabilities(url, features);
-  const recommendations = generateRecommendations(url, vulnerabilities);
-  
-  return {
-    level,
-    risk,
-    vulnerabilities,
-    recommendations
-  };
+  try {
+    const features = extractVulnerabilityFeatures(url);
+
+    const predictionScript = `
+import json
+import pickle
+import numpy as np
+import sys
+
+# Load model
+with open('ml-models/trained_models/vulnerability_model.pkl', 'rb') as f:
+    model_data = pickle.load(f)
+
+model = model_data['model']
+scaler = model_data['scaler']
+feature_names = model_data['feature_names']
+
+# Prepare features
+features = json.loads('${JSON.stringify(features)}')
+feature_vector = np.array([[features[name] for name in feature_names]])
+feature_scaled = scaler.transform(feature_vector)
+
+# Predict
+risk_prob = model.predict_proba(feature_scaled)[0][1]
+prediction = model.predict(feature_scaled)[0]
+
+print(json.dumps({
+    'risk': float(risk_prob),
+    'prediction': int(prediction)
+}))
+`;
+
+    const result = JSON.parse(execSync(`python3 -c "${predictionScript}"`, {
+      encoding: 'utf-8',
+      maxBuffer: 10 * 1024 * 1024
+    }));
+
+    const risk = result.risk;
+    let level = 'low';
+    if (risk > 0.7) level = 'high';
+    else if (risk > 0.4) level = 'medium';
+
+    const vulnerabilities = detectVulnerabilities(url, features);
+    const recommendations = generateRecommendations(url, vulnerabilities);
+
+    return {
+      level,
+      risk,
+      vulnerabilities,
+      recommendations
+    };
+  } catch (error) {
+    console.error('[ML] Vulnerability prediction error:', error);
+    return fallbackVulnerabilityPrediction(url);
+  }
 }
 
 // ============================================================================
@@ -148,15 +239,16 @@ function extractPhishingFeatures(url: string): Record<string, number> {
 
     const urlObj = new URL(url);
     const domain = urlObj.hostname?.toLowerCase() || '';
+    const path = urlObj.pathname.toLowerCase();
 
     const features: Record<string, number> = {
       url_length: url.length,
       domain_length: domain.length,
-      path_length: urlObj.pathname.length,
+      path_length: path.length,
       digit_count: (domain.match(/\d/g) || []).length,
       special_char_count: (domain.match(/[^a-z0-9.]/g) || []).length,
-      digit_ratio: (domain.match(/\d/g) || []).length / Math.max(domain.length, 1),
-      subdomain_count: Math.max((domain.match(/\./g) || []).length - 1, 0),
+      digit_ratio: (domain.match(/\d/g) || []).length / domain.length,
+      subdomain_count: (domain.match(/\./g) || []).length - 1,
       has_hyphen: domain.includes('-') ? 1 : 0,
       has_underscore: domain.includes('_') ? 1 : 0,
       has_at: url.includes('@') ? 1 : 0,
@@ -166,8 +258,7 @@ function extractPhishingFeatures(url: string): Record<string, number> {
       suspicious_keyword_count: countSuspiciousKeywords(domain),
       has_query: url.includes('?') ? 1 : 0,
       query_length: urlObj.search.length,
-      has_fragment: url.includes('#') ? 1 : 0,
-      has_encoding: url.includes('%') ? 1 : 0
+      has_fragment: url.includes('#') ? 1 : 0
     };
 
     return features;
@@ -177,7 +268,7 @@ function extractPhishingFeatures(url: string): Record<string, number> {
       special_char_count: 0, digit_ratio: 0, subdomain_count: 0,
       has_hyphen: 0, has_underscore: 0, has_at: 0, is_ip: 0,
       tld_length: 0, domain_entropy: 0, suspicious_keyword_count: 0,
-      has_query: 0, query_length: 0, has_fragment: 0, has_encoding: 0
+      has_query: 0, query_length: 0, has_fragment: 0
     };
   }
 }
@@ -190,10 +281,10 @@ function extractPasswordFeatures(password: string): Record<string, number> {
     uppercase_count: (password.match(/[A-Z]/g) || []).length,
     digit_count: (password.match(/\d/g) || []).length,
     special_count: (password.match(/[^a-zA-Z0-9]/g) || []).length,
-    lowercase_ratio: (password.match(/[a-z]/g) || []).length / Math.max(password.length, 1),
-    uppercase_ratio: (password.match(/[A-Z]/g) || []).length / Math.max(password.length, 1),
-    digit_ratio: (password.match(/\d/g) || []).length / Math.max(password.length, 1),
-    special_ratio: (password.match(/[^a-zA-Z0-9]/g) || []).length / Math.max(password.length, 1),
+    lowercase_ratio: (password.match(/[a-z]/g) || []).length / password.length,
+    uppercase_ratio: (password.match(/[A-Z]/g) || []).length / password.length,
+    digit_ratio: (password.match(/\d/g) || []).length / password.length,
+    special_ratio: (password.match(/[^a-zA-Z0-9]/g) || []).length / password.length,
     charset_size: calculateCharsetSize(password),
     entropy: calculatePasswordEntropy(password),
     has_sequential: hasSequential(password) ? 1 : 0,
@@ -427,4 +518,70 @@ function estimateCrackTime(features: Record<string, number>): string {
   if (seconds < 31536000) return `${Math.round(seconds / 86400)} days`;
   if (seconds < 31536000 * 1000) return `${Math.round(seconds / 31536000)} years`;
   return 'Centuries';
+}
+
+// ============================================================================
+// FALLBACK FUNCTIONS (for error handling)
+// ============================================================================
+
+function fallbackPhishingPrediction(url: string): PhishingResult {
+  const features = extractPhishingFeatures(url);
+  let probability = 0.2;
+
+  if (features.is_ip) probability += 0.3;
+  if (features.digit_ratio > 0.3) probability += 0.2;
+  if (features.suspicious_keyword_count > 0) probability += 0.1;
+  if (features.has_at) probability += 0.2;
+
+  probability = Math.min(probability, 0.95);
+
+  return {
+    probability,
+    risk: probability > 0.7 ? 'high' : probability > 0.4 ? 'medium' : 'low',
+    confidence: 0.7,
+    features
+  };
+}
+
+function fallbackPasswordPrediction(password: string): PasswordResult {
+  const features = extractPasswordFeatures(password);
+  let strength = 0.3;
+
+  if (features.length >= 12) strength += 0.2;
+  if (features.lowercase_count > 0) strength += 0.15;
+  if (features.uppercase_count > 0) strength += 0.15;
+  if (features.digit_count > 0) strength += 0.15;
+  if (features.special_count > 0) strength += 0.15;
+
+  strength = Math.min(strength, 0.95);
+
+  const suggestions = generatePasswordSuggestions(password, features);
+
+  return {
+    level: strength > 0.7 ? 'strong' : strength > 0.4 ? 'medium' : 'weak',
+    strength,
+    crackTime: estimateCrackTime(features),
+    suggestions
+  };
+}
+
+function fallbackVulnerabilityPrediction(url: string): VulnerabilityResult {
+  const features = extractVulnerabilityFeatures(url);
+  let risk = 0.1;
+
+  if (!features.is_https) risk += 0.3;
+  if (features.xss_risk) risk += 0.3;
+  if (features.sql_risk) risk += 0.3;
+  if (features.traversal_risk) risk += 0.2;
+
+  risk = Math.min(risk, 0.95);
+
+  const vulnerabilities = detectVulnerabilities(url, features);
+
+  return {
+    level: risk > 0.7 ? 'high' : risk > 0.4 ? 'medium' : 'low',
+    risk,
+    vulnerabilities,
+    recommendations: generateRecommendations(url, vulnerabilities)
+  };
 }
