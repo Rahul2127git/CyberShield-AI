@@ -44,7 +44,7 @@ export default function Landing() {
         />
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/50 to-background" />
 
-        <div className="container relative z-10">
+        <div className="container relative z-10 flex flex-col items-center justify-center text-center">
           <div className="max-w-3xl">
             <h1 className="text-5xl md:text-6xl font-bold font-poppins mb-6 leading-tight">
               Professional Security Analysis
@@ -54,7 +54,7 @@ export default function Landing() {
               Analyze URLs, detect phishing threats, evaluate password strength, and identify vulnerabilities
               with our comprehensive security toolkit. Perfect for students, developers, and security learners.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
                 size="lg"
                 onClick={() => setLocation("/dashboard")}
@@ -70,11 +70,11 @@ export default function Landing() {
       {/* Features Section */}
       <section className="py-20 md:py-32 border-t border-border">
         <div className="container">
-          <div className="text-center mb-16">
+          <div className="flex flex-col items-center justify-center text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold font-poppins mb-4">
               Powerful Security Tools
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg text-muted-foreground max-w-2xl">
               Comprehensive analysis features designed for security professionals and learners
             </p>
           </div>
