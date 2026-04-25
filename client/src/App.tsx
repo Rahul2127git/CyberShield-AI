@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
+import { useEffect } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Landing from "./pages/Landing";
@@ -10,6 +11,7 @@ import VulnerabilityScanner from "./pages/VulnerabilityScanner";
 import PhishingDetection from "./pages/PhishingDetection";
 import PasswordAnalyzer from "./pages/PasswordAnalyzer";
 import Reports from "./pages/Reports";
+import { initializeAnalytics } from "./lib/analytics";
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -32,6 +34,10 @@ function Router() {
 // - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
 function App() {
+  useEffect(() => {
+    initializeAnalytics();
+  }, []);
+
   return (
     <ErrorBoundary>
       <ThemeProvider

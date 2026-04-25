@@ -1,9 +1,10 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useState, useEffect } from "react";
+import { useState, useEffect as useReactEffect } from "react";
 import { Eye, EyeOff, AlertTriangle, CheckCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { trackPasswordAnalysis, trackPageView } from "@/lib/analytics";
 
 interface PasswordAnalysis {
   strength: number;
@@ -22,12 +23,17 @@ export default function PasswordAnalyzer() {
     { enabled: false }
   );
 
-  useEffect(() => {
+  useReactEffect(() => {
+    trackPageView('/password', 'Password Analyzer');
+  }, []);
+
+  useReactEffect(() => {
     if (password.trim()) {
       const timer = setTimeout(() => {
         analyzePasswordMutation.refetch().then(result => {
           if (result.data) {
             setAnalysis(result.data);
+            trackPasswordAnalysis(result.data.strength, result.data.level);
           }
         });
       }, 300); // Debounce

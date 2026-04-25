@@ -1,9 +1,10 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2, AlertTriangle, CheckCircle, Shield } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { trackPhishingDetection, trackPageView, trackFeatureUsage } from "@/lib/analytics";
 
 interface PhishingResult {
   url: string;
@@ -18,6 +19,10 @@ export default function PhishingDetection() {
   const [result, setResult] = useState<PhishingResult | null>(null);
   const [error, setError] = useState("");
   
+  useEffect(() => {
+    trackPageView('/phishing', 'Phishing Detection');
+  }, []);
+  
   const analyzePhishingMutation = trpc.security.analyzePhishing.useQuery(
     { url },
     { enabled: false }
@@ -31,11 +36,13 @@ export default function PhishingDetection() {
 
     setError("");
     setResult(null);
+    trackFeatureUsage('phishing_detection_initiated', { url_domain: new URL(url).hostname });
 
     try {
       const response = await analyzePhishingMutation.refetch();
       if (response.data) {
         setResult(response.data);
+        trackPhishingDetection(url, response.data.phishingProbability, response.data.riskLevel === 'high');
       }
     } catch (err) {
       setError("Failed to analyze URL. Please try again.");
