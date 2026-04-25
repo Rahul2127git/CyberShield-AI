@@ -1,6 +1,7 @@
-# 🛡️ CyberShield - AI
+# 🛡️ CyberShield - AI - Professional Security Analysis Platform
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20Site-00C896?style=for-the-badge&logo=shield)](https://cybertoolkit-y9mcbbam.manus.space/)
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-black?style=for-the-badge&logo=github)](https://github.com/yourusername/cybershield-ai)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.11-blue?style=for-the-badge&logo=python)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-blue?style=for-the-badge&logo=react)](https://react.dev/)

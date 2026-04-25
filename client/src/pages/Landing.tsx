@@ -6,13 +6,13 @@ export default function Landing() {
   const [, setLocation] = useLocation();
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Navigation */}
-      <nav className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
         <div className="container flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
             <Shield className="w-6 h-6 text-accent" />
-            <span className="text-xl font-bold font-poppins">Cyber Security Toolkit</span>
+            <span className="text-xl font-bold font-poppins">CyberShield - AI</span>
           </div>
           <div className="flex items-center gap-4">
             <Button
@@ -30,7 +30,7 @@ export default function Landing() {
             </Button>
           </div>
         </div>
-      </nav>
+      </header>
 
       {/* Hero Section */}
       <section className="relative py-20 md:py-32 overflow-hidden">
@@ -182,14 +182,13 @@ export default function Landing() {
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
             Start using our comprehensive security toolkit today. No registration required.
           </p>
-
         </div>
       </section>
 
       {/* Footer */}
       <footer className="border-t border-border py-8 bg-background/50">
         <div className="container text-center text-muted-foreground text-sm">
-          <p>Cyber Security Toolkit • Professional Security Analysis Platform</p>
+          <p>CyberShield - AI • Professional Security Analysis Platform</p>
           <p className="mt-2">Built for students, developers, and security learners</p>
         </div>
       </footer>
