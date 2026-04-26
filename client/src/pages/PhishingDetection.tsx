@@ -186,6 +186,26 @@ export default function PhishingDetection() {
                 Analyzed at {new Date(result.timestamp).toLocaleString()}
               </p>
             </div>
+
+            {/* Download Report Button */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={() => {
+                  const reportText = `PHISHING DETECTION REPORT\n================================\nURL: ${result.url}\nRisk Level: ${result.riskLevel.toUpperCase()}\nPhishing Probability: ${(result.phishingProbability * 100).toFixed(1)}%\nConfidence: ${(result.confidence * 100).toFixed(0)}%\nAnalyzed at: ${new Date(result.timestamp).toLocaleString()}\n\nASSESSMENT:\n${result.riskLevel === 'low' ? 'This URL appears to be legitimate. No major phishing indicators detected.' : result.riskLevel === 'medium' ? 'This URL shows some suspicious characteristics. Exercise caution before clicking or entering credentials.' : 'This URL shows high-risk characteristics. Avoid clicking this link and do not enter any personal information.'}`;
+                  const blob = new Blob([reportText], { type: 'text/plain' });
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `phishing-report-${new Date().getTime()}.txt`;
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                  trackFeatureUsage('download_phishing_report', { risk_level: result.riskLevel });
+                }}
+                className="bg-accent hover:bg-accent/90 text-primary-foreground gap-2"
+              >
+                📥 Download Report
+              </Button>
+            </div>
           </div>
         </Card>
       )}

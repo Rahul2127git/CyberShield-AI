@@ -1,10 +1,11 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect as useReactEffect } from "react";
 import { Eye, EyeOff, AlertTriangle, CheckCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { trackPasswordAnalysis, trackPageView } from "@/lib/analytics";
+import { trackPasswordAnalysis, trackPageView, trackFeatureUsage } from "@/lib/analytics";
 
 interface PasswordAnalysis {
   strength: number;
@@ -161,6 +162,26 @@ export default function PasswordAnalyzer() {
                 </div>
               </Card>
             )}
+
+            {/* Download Report Button */}
+            <div className="flex gap-3">
+              <Button
+                onClick={() => {
+                  const reportText = `PASSWORD STRENGTH REPORT\n================================\nStrength Level: ${analysis.level.toUpperCase()}\nScore: ${getScoreFromLevel(analysis.level, analysis.strength)}/100\nEstimated Crack Time: ${analysis.crackTime}\nAnalyzed at: ${new Date().toLocaleString()}\n\nIMPROVEMENT SUGGESTIONS:\n${analysis.suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nBEST PRACTICES:\n• Use unique passwords for each account\n• Use a password manager to store passwords securely\n• Enable two-factor authentication when available\n• Never share your password with anyone\n• Change passwords if you suspect compromise\n• Avoid using personal information in passwords\n• Use at least 12 characters for strong passwords\n• Mix uppercase, lowercase, numbers, and special characters`;
+                  const blob = new Blob([reportText], { type: 'text/plain' });
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `password-report-${new Date().getTime()}.txt`;
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                  trackFeatureUsage('download_password_report', { strength_level: analysis.level });
+                }}
+                className="bg-accent hover:bg-accent/90 text-primary-foreground gap-2"
+              >
+                📥 Download Report
+              </Button>
+            </div>
 
             {/* Best Practices */}
             <Card className="bg-card border-border p-6">
