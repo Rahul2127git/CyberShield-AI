@@ -27,7 +27,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="container flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
             <Shield className="w-6 h-6 text-accent" />
-            <span className="text-xl font-bold font-poppins">CyberShield - AI</span>
+            <span className="text-xl font-bold font-poppins">CyberShield-AI</span>
           </div>
           <Button
             variant="ghost"

@@ -1,4 +1,4 @@
-# 🛡️ CyberShield - AI - Professional Security Analysis Platform
+# 🛡# CyberShield-AI - Professional Security Analysis Platform
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20Site-00C896?style=for-the-badge&logo=shield)](https://cybertoolkit-y9mcbbam.manus.space/)
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-black?style=for-the-badge&logo=github)](https://github.com/yourusername/cybershield-ai)
