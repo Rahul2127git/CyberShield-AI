@@ -62,6 +62,57 @@ export const appRouter = router({
         };
       }),
   }),
+
+  reports: router({
+    generateVulnerabilityReport: publicProcedure
+      .input(z.object({
+        url: z.string(),
+        riskScore: z.number(),
+        riskLevel: z.string(),
+        vulnerabilities: z.array(z.string()),
+        recommendations: z.array(z.string()),
+      }))
+      .mutation(({ input }) => {
+        const { generateVulnerabilityPDF } = require('../server/pdf-generator');
+        const htmlContent = generateVulnerabilityPDF({
+          ...input,
+          timestamp: new Date(),
+        });
+        return { html: htmlContent, filename: `vulnerability-report-${Date.now()}.pdf` };
+      }),
+    
+    generatePhishingReport: publicProcedure
+      .input(z.object({
+        url: z.string(),
+        phishingProbability: z.number(),
+        riskLevel: z.string(),
+        confidence: z.number(),
+      }))
+      .mutation(({ input }) => {
+        const { generatePhishingPDF } = require('../server/pdf-generator');
+        const htmlContent = generatePhishingPDF({
+          ...input,
+          timestamp: new Date(),
+        });
+        return { html: htmlContent, filename: `phishing-report-${Date.now()}.pdf` };
+      }),
+    
+    generatePasswordReport: publicProcedure
+      .input(z.object({
+        strength: z.number(),
+        level: z.string(),
+        crackTime: z.string(),
+        suggestions: z.array(z.string()),
+      }))
+      .mutation(({ input }) => {
+        const { generatePasswordPDF } = require('../server/pdf-generator');
+        const htmlContent = generatePasswordPDF({
+          ...input,
+          timestamp: new Date(),
+        });
+        return { html: htmlContent, filename: `password-report-${Date.now()}.pdf` };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
