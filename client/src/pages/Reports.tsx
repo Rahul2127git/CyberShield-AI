@@ -2,14 +2,18 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
-import { Search, Download, Trash2 } from "lucide-react";
+import { Search, Download, Trash2, AlertCircle, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+// import { trackEvent } from "@/lib/analytics";
 
 interface Scan {
   input: string;
   type: string;
   riskLevel: "low" | "medium" | "high";
   timestamp: string;
+  details?: string;
+  findings?: string[];
+  recommendations?: string[];
 }
 
 export default function Reports() {
@@ -64,6 +68,498 @@ export default function Reports() {
     localStorage.setItem("cst_scans", JSON.stringify(newScans));
   };
 
+  const getRiskScore = (level: string): number => {
+    switch (level) {
+      case "high":
+        return 75;
+      case "medium":
+        return 50;
+      case "low":
+        return 25;
+      default:
+        return 0;
+    }
+  };
+
+  const generateProfessionalPDF = (scan: Scan) => {
+    // Track: PDF report download
+
+    const riskScore = getRiskScore(scan.riskLevel);
+    const reportId = `RPT-${Date.now().toString().slice(-6)}`;
+    const generatedDate = new Date().toLocaleDateString();
+
+    const findings = scan.findings || [
+      `Analysis of ${scan.type} completed`,
+      `Risk Level: ${scan.riskLevel.toUpperCase()}`,
+      `Input: ${scan.input}`,
+    ];
+
+    const recommendations = scan.recommendations || [
+      "Review security configurations regularly",
+      "Implement recommended security measures",
+      "Monitor for future threats",
+      "Keep security tools updated",
+    ];
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>CyberShield-AI Security Report</title>
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            
+            @page {
+              size: A4;
+              margin: 0;
+            }
+            
+            body {
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              background: #0B0F14;
+              color: #E6EDF3;
+              line-height: 1.6;
+            }
+            
+            .container {
+              max-width: 900px;
+              margin: 0 auto;
+              background: #1a1f2e;
+              min-height: 100vh;
+              display: flex;
+              flex-direction: column;
+            }
+            
+            .header {
+              background: linear-gradient(135deg, #0B0F14 0%, #1a1f2e 100%);
+              border-bottom: 2px solid #00C896;
+              padding: 40px;
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
+            }
+            
+            .header-left h1 {
+              font-size: 28px;
+              font-weight: bold;
+              color: #E6EDF3;
+              margin-bottom: 8px;
+            }
+            
+            .header-meta {
+              font-size: 12px;
+              color: #8B949E;
+              line-height: 1.8;
+            }
+            
+            .header-right {
+              background: #00C896;
+              color: #0B0F14;
+              padding: 12px 20px;
+              border-radius: 6px;
+              font-weight: 600;
+              font-size: 14px;
+            }
+            
+            .content {
+              padding: 40px;
+              flex: 1;
+            }
+            
+            .score-section {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 30px;
+              margin-bottom: 40px;
+            }
+            
+            .score-card {
+              background: #0B0F14;
+              border: 1px solid #30363D;
+              border-radius: 8px;
+              padding: 30px;
+              text-align: center;
+            }
+            
+            .score-label {
+              font-size: 14px;
+              color: #8B949E;
+              margin-bottom: 16px;
+            }
+            
+            .score-circle {
+              width: 120px;
+              height: 120px;
+              margin: 0 auto 20px;
+              background: conic-gradient(#00C896 0deg, #00C896 ${riskScore * 3.6}deg, #30363D ${riskScore * 3.6}deg);
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 32px;
+              font-weight: bold;
+              color: #00C896;
+            }
+            
+            .risk-badge {
+              display: inline-block;
+              padding: 8px 16px;
+              border-radius: 6px;
+              font-weight: 600;
+              font-size: 14px;
+              margin-top: 12px;
+            }
+            
+            .risk-high { background: #FF6B6B; color: white; }
+            .risk-medium { background: #FFB84D; color: white; }
+            .risk-low { background: #00C896; color: white; }
+            
+            .summary-grid {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 12px;
+            }
+            
+            .summary-stat {
+              background: #1a1f2e;
+              border: 1px solid #30363D;
+              border-radius: 6px;
+              padding: 12px;
+              text-align: center;
+            }
+            
+            .summary-stat-value {
+              font-size: 20px;
+              font-weight: bold;
+              color: #00C896;
+              margin-bottom: 4px;
+            }
+            
+            .summary-stat-label {
+              font-size: 11px;
+              color: #8B949E;
+            }
+            
+            .section {
+              margin-bottom: 40px;
+            }
+            
+            .section-title {
+              font-size: 18px;
+              font-weight: 600;
+              color: #E6EDF3;
+              margin-bottom: 16px;
+              padding-bottom: 12px;
+              border-bottom: 2px solid #00C896;
+            }
+            
+            .summary-text {
+              background: #0B0F14;
+              border-left: 4px solid #00C896;
+              padding: 16px;
+              border-radius: 4px;
+              line-height: 1.6;
+              color: #C9D1D9;
+              font-size: 14px;
+            }
+            
+            .findings-list {
+              background: #0B0F14;
+              border: 1px solid #30363D;
+              border-radius: 8px;
+              padding: 20px;
+            }
+            
+            .finding-item {
+              display: flex;
+              gap: 12px;
+              margin-bottom: 12px;
+              padding-bottom: 12px;
+              border-bottom: 1px solid #30363D;
+            }
+            
+            .finding-item:last-child {
+              border-bottom: none;
+              margin-bottom: 0;
+              padding-bottom: 0;
+            }
+            
+            .finding-icon {
+              color: #FF6B6B;
+              font-weight: bold;
+              flex-shrink: 0;
+            }
+            
+            .finding-text {
+              color: #C9D1D9;
+              font-size: 14px;
+              line-height: 1.5;
+            }
+            
+            .recommendations-list {
+              background: #0B0F14;
+              border: 1px solid #30363D;
+              border-radius: 8px;
+              padding: 20px;
+            }
+            
+            .recommendation-item {
+              display: flex;
+              gap: 12px;
+              margin-bottom: 16px;
+              padding: 12px;
+              background: #1a1f2e;
+              border-left: 4px solid #00C896;
+              border-radius: 4px;
+            }
+            
+            .recommendation-item:last-child {
+              margin-bottom: 0;
+            }
+            
+            .recommendation-number {
+              color: #00C896;
+              font-weight: bold;
+              flex-shrink: 0;
+              min-width: 24px;
+            }
+            
+            .recommendation-text {
+              color: #C9D1D9;
+              font-size: 14px;
+              line-height: 1.5;
+            }
+            
+            .risk-assessment {
+              background: #0B0F14;
+              border: 1px solid #30363D;
+              border-radius: 8px;
+              padding: 20px;
+            }
+            
+            .risk-item {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 12px;
+              padding-bottom: 12px;
+              border-bottom: 1px solid #30363D;
+            }
+            
+            .risk-item:last-child {
+              border-bottom: none;
+              margin-bottom: 0;
+              padding-bottom: 0;
+            }
+            
+            .risk-item-label {
+              color: #C9D1D9;
+            }
+            
+            .risk-item-value {
+              color: #00C896;
+              font-weight: 600;
+            }
+            
+            .disclaimer {
+              background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 107, 107, 0.05));
+              border: 1px solid #FF6B6B;
+              border-radius: 8px;
+              padding: 16px;
+              margin-bottom: 40px;
+              display: flex;
+              gap: 12px;
+            }
+            
+            .disclaimer-icon {
+              color: #FF6B6B;
+              flex-shrink: 0;
+              font-weight: bold;
+            }
+            
+            .disclaimer-text {
+              color: #C9D1D9;
+              font-size: 12px;
+              line-height: 1.5;
+            }
+            
+            .footer {
+              background: #0B0F14;
+              border-top: 1px solid #30363D;
+              padding: 20px 40px;
+              text-align: center;
+              color: #8B949E;
+              font-size: 12px;
+            }
+            
+            .footer-text {
+              margin: 4px 0;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div class="header-left">
+                <h1>🛡️ CyberShield-AI Security Report</h1>
+                <div class="header-meta">
+                  <div>Report ID: ${reportId}</div>
+                  <div>Generated: ${generatedDate}</div>
+                  <div>Type: ${scan.type}</div>
+                </div>
+              </div>
+              <div class="header-right">📥 Download PDF</div>
+            </div>
+            
+            <div class="content">
+              <div class="score-section">
+                <div class="score-card">
+                  <div class="score-label">Overall Security Score</div>
+                  <div class="score-circle">${riskScore}</div>
+                  <div class="score-label">out of 100</div>
+                  <div class="risk-badge risk-${scan.riskLevel}">${scan.riskLevel.toUpperCase()}</div>
+                </div>
+                <div class="score-card">
+                  <div class="score-label">Report Summary</div>
+                  <div class="summary-grid">
+                    <div class="summary-stat">
+                      <div class="summary-stat-value">${findings.length}</div>
+                      <div class="summary-stat-label">Findings</div>
+                    </div>
+                    <div class="summary-stat">
+                      <div class="summary-stat-value">${recommendations.length}</div>
+                      <div class="summary-stat-label">Recommendations</div>
+                    </div>
+                    <div class="summary-stat">
+                      <div class="summary-stat-value">${new Date(scan.timestamp).toLocaleDateString()}</div>
+                      <div class="summary-stat-label">Scanned</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="section">
+                <div class="section-title">📋 Executive Summary</div>
+                <div class="summary-text">
+                  ${scan.details || `Security analysis of ${scan.type} completed. The scanned item has been assessed with a ${scan.riskLevel.toUpperCase()} risk level. This report provides detailed findings and personalized recommendations to improve security posture.`}
+                </div>
+              </div>
+              
+              <div class="section">
+                <div class="section-title">🔍 Key Findings</div>
+                <div class="findings-list">
+                  ${findings
+                    .map(
+                      (finding) => `
+                    <div class="finding-item">
+                      <div class="finding-icon">⚠️</div>
+                      <div class="finding-text">${finding}</div>
+                    </div>
+                  `
+                    )
+                    .join("")}
+                </div>
+              </div>
+              
+              <div class="section">
+                <div class="section-title">💡 Personalized Recommendations</div>
+                <div class="recommendations-list">
+                  ${recommendations
+                    .map(
+                      (rec, idx) => `
+                    <div class="recommendation-item">
+                      <div class="recommendation-number">${idx + 1}</div>
+                      <div class="recommendation-text">${rec}</div>
+                    </div>
+                  `
+                    )
+                    .join("")}
+                </div>
+              </div>
+              
+              <div class="section">
+                <div class="section-title">⚠️ Risk Assessment</div>
+                <div class="risk-assessment">
+                  <div class="risk-item">
+                    <span class="risk-item-label">Risk Level:</span>
+                    <span class="risk-item-value">${scan.riskLevel.toUpperCase()}</span>
+                  </div>
+                  <div class="risk-item">
+                    <span class="risk-item-label">Security Score:</span>
+                    <span class="risk-item-value">${riskScore}/100</span>
+                  </div>
+                  <div class="risk-item">
+                    <span class="risk-item-label">Analysis Type:</span>
+                    <span class="risk-item-value">${scan.type}</span>
+                  </div>
+                  <div class="risk-item">
+                    <span class="risk-item-label">Scan Date:</span>
+                    <span class="risk-item-value">${new Date(scan.timestamp).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="disclaimer">
+                <div class="disclaimer-icon">⚠️</div>
+                <div class="disclaimer-text">
+                  <strong>Security Disclaimer:</strong> This report is generated by CyberShield-AI for educational and informational purposes. Always consult with qualified security professionals for critical systems. This analysis is not a substitute for professional security audits.
+                </div>
+              </div>
+            </div>
+            
+            <div class="footer">
+              <div class="footer-text">CyberShield-AI © 2026 · Professional Security Analysis Platform</div>
+              <div class="footer-text">Report generated on ${new Date().toLocaleString()}</div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    // Create and download HTML version
+    const htmlElement = document.createElement("a");
+    htmlElement.setAttribute(
+      "href",
+      "data:text/html;charset=utf-8," + encodeURIComponent(html)
+    );
+    htmlElement.setAttribute(
+      "download",
+      `CyberShield-Report-${reportId}.html`
+    );
+    htmlElement.style.display = "none";
+    document.body.appendChild(htmlElement);
+    htmlElement.click();
+    document.body.removeChild(htmlElement);
+
+    // Try to generate PDF using html2pdf if available
+    setTimeout(() => {
+      try {
+        const element = document.createElement("div");
+        element.innerHTML = html;
+        const opt = {
+          margin: 0,
+          filename: `CyberShield-Report-${reportId}.pdf`,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2 },
+          jsPDF: { orientation: "portrait", unit: "mm", format: "a4" },
+        };
+        const script = document.createElement("script");
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+        script.onload = () => {
+          (window as any).html2pdf().set(opt).from(element).save();
+        };
+        document.head.appendChild(script);
+      } catch (error) {
+        console.log("PDF generation attempted. HTML file downloaded successfully.");
+      }
+    }, 100);
+  };
+
   const handleExportReport = () => {
     const report = filteredScans
       .map(
@@ -94,7 +590,7 @@ export default function Reports() {
         {/* Header */}
         <div>
           <h1 className="text-4xl font-bold font-poppins mb-2">Scan Reports</h1>
-          <p className="text-muted-foreground">View and manage your security analysis history</p>
+          <p className="text-muted-foreground">View and manage your security analysis history with professional PDF reports</p>
         </div>
 
         {/* Statistics */}
@@ -171,7 +667,7 @@ export default function Reports() {
                 className="gap-2"
               >
                 <Download className="w-4 h-4" />
-                Export
+                Export All
               </Button>
               <Button
                 onClick={handleClearAll}
@@ -190,38 +686,36 @@ export default function Reports() {
               {scans.length === 0 ? "No scans yet. Start analyzing to build your report history." : "No scans match your filters."}
             </p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Timestamp</th>
-                    <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Type</th>
-                    <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Input</th>
-                    <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Risk Level</th>
-                    <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredScans.map((scan, idx) => (
-                    <tr key={idx} className="border-b border-border/50 hover:bg-secondary/20 transition-colors">
-                      <td className="py-3 px-4 text-muted-foreground">{scan.timestamp}</td>
-                      <td className="py-3 px-4 font-mono text-sm">{scan.type}</td>
-                      <td className="py-3 px-4 font-mono text-sm max-w-xs truncate">{scan.input}</td>
-                      <td className="py-3 px-4">
+            <div className="space-y-3">
+              {filteredScans.map((scan, idx) => (
+                <div key={idx} className="bg-secondary/30 border border-border rounded-lg p-4 hover:border-accent/50 transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
                         <span className={`risk-badge risk-${scan.riskLevel}`}>{scan.riskLevel.toUpperCase()}</span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <button
-                          onClick={() => handleDeleteScan(scans.indexOf(scan))}
-                          className="text-red-400 hover:text-red-300 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        <span className="font-mono text-sm text-muted-foreground">{scan.type}</span>
+                      </div>
+                      <p className="font-mono text-sm max-w-2xl truncate">{scan.input}</p>
+                      <p className="text-xs text-muted-foreground mt-2">{scan.timestamp}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => generateProfessionalPDF(scan)}
+                        className="bg-accent hover:bg-accent/80 text-dark-bg gap-2 text-sm"
+                      >
+                        <Download className="w-4 h-4" />
+                        PDF Report
+                      </Button>
+                      <button
+                        onClick={() => handleDeleteScan(scans.indexOf(scan))}
+                        className="text-red-400 hover:text-red-300 transition-colors p-2"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </Card>
@@ -229,7 +723,7 @@ export default function Reports() {
         {/* Export Info */}
         <Card className="bg-secondary/30 border-border p-4">
           <p className="text-sm text-muted-foreground">
-            💡 <strong>Tip:</strong> Export your scan reports to share with team members or for compliance documentation.
+            💡 <strong>Tip:</strong> Download professional PDF reports to share with team members or for compliance documentation. Each report includes executive summary, findings, and personalized recommendations.
           </p>
         </Card>
       </div>
