@@ -1,10 +1,12 @@
+import DashboardLayout from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
-import { Loader2, AlertTriangle, CheckCircle, Shield } from "lucide-react";
+import { Loader2, AlertTriangle, CheckCircle, Shield, Download } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { trackPhishingDetection, trackPageView, trackFeatureUsage } from "@/lib/analytics";
+import { downloadPDFReport } from "@/lib/html-to-pdf";
 
 interface PhishingResult {
   url: string;
@@ -191,18 +193,179 @@ export default function PhishingDetection() {
             <div className="flex gap-3 pt-4">
               <Button
                 onClick={() => {
-                  const reportText = `PHISHING DETECTION REPORT\n================================\nURL: ${result.url}\nRisk Level: ${result.riskLevel.toUpperCase()}\nPhishing Probability: ${(result.phishingProbability * 100).toFixed(1)}%\nConfidence: ${(result.confidence * 100).toFixed(0)}%\nAnalyzed at: ${new Date(result.timestamp).toLocaleString()}\n\nASSESSMENT:\n${result.riskLevel === 'low' ? 'This URL appears to be legitimate. No major phishing indicators detected.' : result.riskLevel === 'medium' ? 'This URL shows some suspicious characteristics. Exercise caution before clicking or entering credentials.' : 'This URL shows high-risk characteristics. Avoid clicking this link and do not enter any personal information.'}`;
-                  const blob = new Blob([reportText], { type: 'text/plain' });
-                  const url = window.URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `phishing-report-${new Date().getTime()}.txt`;
-                  a.click();
-                  window.URL.revokeObjectURL(url);
+                  const riskColors = {
+                    low: '#00C896',
+                    medium: '#FFA500',
+                    high: '#FF6B6B',
+                  };
+                  const riskColor = riskColors[result.riskLevel as keyof typeof riskColors] || '#8B949E';
+                  
+                  const htmlContent = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                      <meta charset="UTF-8">
+                      <style>
+                        * { margin: 0; padding: 0; }
+                        body { 
+                          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                          background: #0B0F14; 
+                          color: #E6EDF3; 
+                          padding: 40px;
+                        }
+                        .container { max-width: 900px; margin: 0 auto; }
+                        .header { 
+                          border-bottom: 2px solid #00C896; 
+                          padding-bottom: 20px; 
+                          margin-bottom: 30px;
+                        }
+                        .title { 
+                          font-size: 28px; 
+                          font-weight: bold; 
+                          color: #00C896; 
+                          margin-bottom: 8px;
+                        }
+                        .report-id { 
+                          font-size: 12px; 
+                          color: #8B949E;
+                          margin-bottom: 4px;
+                        }
+                        .score-section {
+                          background: #161B22;
+                          padding: 20px;
+                          border-radius: 8px;
+                          border-left: 4px solid #00C896;
+                          margin-bottom: 30px;
+                        }
+                        .score-row {
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: center;
+                          margin-bottom: 12px;
+                        }
+                        .score-label { font-size: 12px; color: #8B949E; }
+                        .score-value { 
+                          font-size: 24px; 
+                          font-weight: bold; 
+                          color: #00C896;
+                        }
+                        .risk-badge {
+                          padding: 8px 16px;
+                          border-radius: 4px;
+                          font-weight: bold;
+                          color: white;
+                          background: ${riskColor};
+                          font-size: 14px;
+                        }
+                        .section { margin-bottom: 25px; }
+                        .section-title {
+                          font-size: 16px;
+                          font-weight: bold;
+                          color: #E6EDF3;
+                          margin-bottom: 12px;
+                          border-bottom: 1px solid #30363D;
+                          padding-bottom: 8px;
+                        }
+                        .list-item {
+                          display: flex;
+                          margin-bottom: 8px;
+                          font-size: 12px;
+                        }
+                        .bullet { 
+                          color: #00C896; 
+                          margin-right: 10px;
+                          min-width: 20px;
+                        }
+                        .list-text { 
+                          color: #C9D1D9; 
+                          line-height: 1.6;
+                        }
+                        .url-text {
+                          font-size: 12px; 
+                          color: #C9D1D9; 
+                          word-break: break-all; 
+                          font-family: monospace;
+                        }
+                        .footer {
+                          margin-top: 40px;
+                          padding-top: 20px;
+                          border-top: 1px solid #30363D;
+                          font-size: 10px;
+                          color: #8B949E;
+                        }
+                        .disclaimer {
+                          margin-top: 20px;
+                          padding: 12px;
+                          background: rgba(255, 107, 107, 0.1);
+                          border-left: 3px solid #FF6B6B;
+                          font-size: 11px;
+                          color: #FF6B6B;
+                        }
+                      </style>
+                    </head>
+                    <body>
+                      <div class="container">
+                        <div class="header">
+                          <div class="title">🎣 Phishing Detection Report</div>
+                          <div class="report-id">Report ID: PHR-${Date.now()}</div>
+                          <div class="report-id">Generated: ${new Date(result.timestamp).toLocaleString()}</div>
+                        </div>
+
+                        <div class="score-section">
+                          <div class="score-row">
+                            <div>
+                              <div class="score-label">Risk Level</div>
+                              <div class="risk-badge">${result.riskLevel.toUpperCase()}</div>
+                            </div>
+                            <div>
+                              <div class="score-label">Phishing Probability</div>
+                              <div class="score-value">${(result.phishingProbability * 100).toFixed(1)}%</div>
+                            </div>
+                            <div>
+                              <div class="score-label">Confidence</div>
+                              <div class="score-value">${(result.confidence * 100).toFixed(0)}%</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="section">
+                          <div class="section-title">URL Analyzed</div>
+                          <div class="url-text">${result.url}</div>
+                        </div>
+
+                        <div class="section">
+                          <div class="section-title">Assessment</div>
+                          <div class="list-item">
+                            <div class="bullet">${result.riskLevel === 'low' ? '✓' : '⚠️'}</div>
+                            <div class="list-text">
+                              ${result.riskLevel === 'low' 
+                                ? 'This URL appears to be legitimate. No major phishing indicators detected.' 
+                                : result.riskLevel === 'medium' 
+                                ? 'This URL shows some suspicious characteristics. Exercise caution before clicking or entering credentials.' 
+                                : 'This URL shows high-risk characteristics. Avoid clicking this link and do not enter any personal information.'}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="footer">
+                          <p>CyberShield-AI Phishing Detection Report</p>
+                          <p>Generated on ${new Date(result.timestamp).toLocaleString()}</p>
+                        </div>
+
+                        <div class="disclaimer">
+                          ⚠️ Disclaimer: This report is generated by AI for educational and demonstration purposes. For critical security decisions, consult with qualified security professionals.
+                        </div>
+                      </div>
+                    </body>
+                    </html>
+                  `;
+                  
+                  downloadPDFReport(htmlContent, `phishing-report-${new Date().getTime()}.pdf`);
                   trackFeatureUsage('download_phishing_report', { risk_level: result.riskLevel });
                 }}
                 className="bg-accent hover:bg-accent/90 text-primary-foreground gap-2"
               >
+                <Download className="w-4 h-4" />
                 📥 Download Report
               </Button>
             </div>

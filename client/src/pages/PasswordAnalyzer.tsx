@@ -3,9 +3,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect as useReactEffect } from "react";
-import { Eye, EyeOff, AlertTriangle, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, AlertTriangle, CheckCircle, Download } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { trackPasswordAnalysis, trackPageView, trackFeatureUsage } from "@/lib/analytics";
+import { downloadPDFReport } from "@/lib/html-to-pdf";
 
 interface PasswordAnalysis {
   strength: number;
@@ -167,18 +168,170 @@ export default function PasswordAnalyzer() {
             <div className="flex gap-3">
               <Button
                 onClick={() => {
-                  const reportText = `PASSWORD STRENGTH REPORT\n================================\nStrength Level: ${analysis.level.toUpperCase()}\nScore: ${getScoreFromLevel(analysis.level, analysis.strength)}/100\nEstimated Crack Time: ${analysis.crackTime}\nAnalyzed at: ${new Date().toLocaleString()}\n\nIMPROVEMENT SUGGESTIONS:\n${analysis.suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nBEST PRACTICES:\n• Use unique passwords for each account\n• Use a password manager to store passwords securely\n• Enable two-factor authentication when available\n• Never share your password with anyone\n• Change passwords if you suspect compromise\n• Avoid using personal information in passwords\n• Use at least 12 characters for strong passwords\n• Mix uppercase, lowercase, numbers, and special characters`;
-                  const blob = new Blob([reportText], { type: 'text/plain' });
-                  const url = window.URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `password-report-${new Date().getTime()}.txt`;
-                  a.click();
-                  window.URL.revokeObjectURL(url);
+                  const strengthColors = {
+                    weak: '#FF6B6B',
+                    medium: '#FFA500',
+                    strong: '#00C896',
+                  };
+                  const strengthColor = strengthColors[analysis.level as keyof typeof strengthColors] || '#8B949E';
+                  
+                  const htmlContent = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                      <meta charset="UTF-8">
+                      <style>
+                        * { margin: 0; padding: 0; }
+                        body { 
+                          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                          background: #0B0F14; 
+                          color: #E6EDF3; 
+                          padding: 40px;
+                        }
+                        .container { max-width: 900px; margin: 0 auto; }
+                        .header { 
+                          border-bottom: 2px solid #00C896; 
+                          padding-bottom: 20px; 
+                          margin-bottom: 30px;
+                        }
+                        .title { 
+                          font-size: 28px; 
+                          font-weight: bold; 
+                          color: #00C896; 
+                          margin-bottom: 8px;
+                        }
+                        .report-id { 
+                          font-size: 12px; 
+                          color: #8B949E;
+                          margin-bottom: 4px;
+                        }
+                        .score-section {
+                          background: #161B22;
+                          padding: 20px;
+                          border-radius: 8px;
+                          border-left: 4px solid #00C896;
+                          margin-bottom: 30px;
+                        }
+                        .score-row {
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: center;
+                          margin-bottom: 12px;
+                        }
+                        .score-label { font-size: 12px; color: #8B949E; }
+                        .score-value { 
+                          font-size: 24px; 
+                          font-weight: bold; 
+                          color: #00C896;
+                        }
+                        .strength-badge {
+                          padding: 8px 16px;
+                          border-radius: 4px;
+                          font-weight: bold;
+                          color: white;
+                          background: ${strengthColor};
+                          font-size: 14px;
+                        }
+                        .section { margin-bottom: 25px; }
+                        .section-title {
+                          font-size: 16px;
+                          font-weight: bold;
+                          color: #E6EDF3;
+                          margin-bottom: 12px;
+                          border-bottom: 1px solid #30363D;
+                          padding-bottom: 8px;
+                        }
+                        .list-item {
+                          display: flex;
+                          margin-bottom: 8px;
+                          font-size: 12px;
+                        }
+                        .bullet { 
+                          color: #00C896; 
+                          margin-right: 10px;
+                          min-width: 20px;
+                        }
+                        .list-text { 
+                          color: #C9D1D9; 
+                          line-height: 1.6;
+                        }
+                        .footer {
+                          margin-top: 40px;
+                          padding-top: 20px;
+                          border-top: 1px solid #30363D;
+                          font-size: 10px;
+                          color: #8B949E;
+                        }
+                        .disclaimer {
+                          margin-top: 20px;
+                          padding: 12px;
+                          background: rgba(255, 107, 107, 0.1);
+                          border-left: 3px solid #FF6B6B;
+                          font-size: 11px;
+                          color: #FF6B6B;
+                        }
+                      </style>
+                    </head>
+                    <body>
+                      <div class="container">
+                        <div class="header">
+                          <div class="title">🔐 Password Strength Report</div>
+                          <div class="report-id">Report ID: PWD-${Date.now()}</div>
+                          <div class="report-id">Generated: ${new Date().toLocaleString()}</div>
+                        </div>
+
+                        <div class="score-section">
+                          <div class="score-row">
+                            <div>
+                              <div class="score-label">Strength Level</div>
+                              <div class="strength-badge">${analysis.level.toUpperCase()}</div>
+                            </div>
+                            <div>
+                              <div class="score-label">Score</div>
+                              <div class="score-value">${getScoreFromLevel(analysis.level, analysis.strength)}/100</div>
+                            </div>
+                            <div>
+                              <div class="score-label">Estimated Crack Time</div>
+                              <div class="score-value">${analysis.crackTime}</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="section">
+                          <div class="section-title">Improvement Suggestions</div>
+                          ${analysis.suggestions.length > 0 
+                            ? analysis.suggestions.map(s => `<div class="list-item"><div class="bullet">•</div><div class="list-text">${s}</div></div>`).join('') 
+                            : '<div class="list-text" style="color: #00C896;">✓ Your password is excellent! No improvements needed.</div>'}
+                        </div>
+
+                        <div class="section">
+                          <div class="section-title">Best Practices</div>
+                          <div class="list-item"><div class="bullet">•</div><div class="list-text">Use unique passwords for each account</div></div>
+                          <div class="list-item"><div class="bullet">•</div><div class="list-text">Use a password manager to store passwords securely</div></div>
+                          <div class="list-item"><div class="bullet">•</div><div class="list-text">Enable two-factor authentication when available</div></div>
+                          <div class="list-item"><div class="bullet">•</div><div class="list-text">Never share your password with anyone</div></div>
+                          <div class="list-item"><div class="bullet">•</div><div class="list-text">Change passwords if you suspect compromise</div></div>
+                        </div>
+
+                        <div class="footer">
+                          <p>CyberShield-AI Password Strength Report</p>
+                          <p>Generated on ${new Date().toLocaleString()}</p>
+                        </div>
+
+                        <div class="disclaimer">
+                          ⚠️ Disclaimer: This report is generated by AI for educational and demonstration purposes. For critical security decisions, consult with qualified security professionals.
+                        </div>
+                      </div>
+                    </body>
+                    </html>
+                  `;
+                  
+                  downloadPDFReport(htmlContent, `password-report-${new Date().getTime()}.pdf`);
                   trackFeatureUsage('download_password_report', { strength_level: analysis.level });
                 }}
                 className="bg-accent hover:bg-accent/90 text-primary-foreground gap-2"
               >
+                <Download className="w-4 h-4" />
                 📥 Download Report
               </Button>
             </div>
