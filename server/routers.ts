@@ -31,6 +31,8 @@ export const appRouter = router({
           phishingProbability: result.probability,
           riskLevel: result.risk,
           confidence: result.confidence,
+          threatIndicators: result.threatIndicators,
+          riskFactors: result.riskFactors,
           timestamp: new Date(),
         };
       }),
@@ -44,6 +46,9 @@ export const appRouter = router({
           level: result.level,
           crackTime: result.crackTime,
           suggestions: result.suggestions,
+          entropyScore: result.entropyScore,
+          charsetSize: result.charsetSize,
+          vulnerabilities: result.vulnerabilities,
           timestamp: new Date(),
         };
       }),
@@ -58,6 +63,8 @@ export const appRouter = router({
           riskLevel: result.level,
           vulnerabilities: result.vulnerabilities,
           recommendations: result.recommendations,
+          securityHeaders: result.securityHeaders,
+          threatSummary: result.threatSummary,
           timestamp: new Date(),
         };
       }),
