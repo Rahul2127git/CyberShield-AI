@@ -312,9 +312,10 @@ export default function PhishingDetection() {
                         * { margin: 0; padding: 0; }
                         body { 
                           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                          background: #0B0F14; 
-                          color: #E6EDF3; 
+                          background: #FFFFFF; 
+                          color: #1A1A1A; 
                           padding: 40px;
+                          line-height: 1.6;
                         }
                         .container { max-width: 900px; margin: 0 auto; }
                         .header { 
@@ -341,33 +342,36 @@ export default function PhishingDetection() {
                         .section {
                           margin-bottom: 30px;
                           padding: 20px;
-                          background: #161B22;
-                          border-left: 4px solid #00C896;
-                          border-radius: 4px;
+                          background: #F5F5F5;
+                          border-left: 5px solid #00C896;
+                          border-radius: 6px;
+                          page-break-inside: avoid;
                         }
                         .section-title {
                           font-size: 18px;
                           font-weight: bold;
-                          color: #00C896;
+                          color: #1A1A1A;
                           margin-bottom: 15px;
+                          border-bottom: 2px solid #00C896;
+                          padding-bottom: 10px;
                         }
                         .risk-badge {
                           display: inline-block;
-                          padding: 8px 16px;
-                          border-radius: 4px;
+                          padding: 12px 20px;
+                          border-radius: 6px;
                           font-weight: bold;
-                          font-size: 14px;
+                          font-size: 15px;
                           margin-bottom: 15px;
-                          background: ${riskColor}20;
-                          color: ${riskColor};
-                          border: 1px solid ${riskColor}40;
+                          background: ${riskColor};
+                          color: white;
+                          border: none;
                         }
                         .score-bar {
-                          background: #30363D;
-                          height: 8px;
-                          border-radius: 4px;
+                          background: #CCCCCC;
+                          height: 10px;
+                          border-radius: 5px;
                           overflow: hidden;
-                          margin-bottom: 10px;
+                          margin-bottom: 15px;
                         }
                         .score-fill {
                           height: 100%;
@@ -377,16 +381,19 @@ export default function PhishingDetection() {
                         .threat-item {
                           margin-bottom: 12px;
                           padding: 12px;
-                          background: #0D1117;
-                          border-left: 3px solid #FF6B6B;
+                          background: #FFF3CD;
+                          border-left: 4px solid #FF9800;
                           border-radius: 4px;
+                          color: #333333;
+                          font-size: 13px;
+                          line-height: 1.6;
                         }
                         .footer {
                           margin-top: 40px;
                           padding-top: 20px;
-                          border-top: 1px solid #30363D;
+                          border-top: 2px solid #CCCCCC;
                           font-size: 12px;
-                          color: #8B949E;
+                          color: #666666;
                           text-align: center;
                         }
                       </style>
